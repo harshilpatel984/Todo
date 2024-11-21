@@ -1,0 +1,59 @@
+version: "3.8"
+
+networks:
+  todo-network:
+    driver: bridge
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    networks:
+      - todo-network
+    ports:
+      - "7101:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    depends_on:
+      - mongodb
+    networks:
+      - todo-network
+    ports:
+      - "7102:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_SERVER: mongodb
+    restart: always
+
+  todo-app:
+    build: .
+    container_name: todo-app
+    depends_on:
+      - mongodb
+    networks:
+      - todo-network
+    ports:
+      - "7103:4040"
+    environment:
+      PORT: 4040
+      DB_HOST: mongodb
+      DB_PORT: 27017
+      DB_NAME: todo
+      DB_USER: admin
+      DB_PASS: password
+      TOKEN_SECRET: cc.oOEb+b@R#
+      TODO_CRON: 0 0 * * *
+      LOG_LEVEL: info
+    restart: always
+
+volumes:
+  mongodb_data:
