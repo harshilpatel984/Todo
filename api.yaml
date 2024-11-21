@@ -1,0 +1,298 @@
+openapi: 3.0.0
+info:
+  title: Todo List API
+  description: REST API for managing todo items, including authentication.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Local development server
+
+tags:
+  - name: User
+  - name: Todo
+  
+paths:
+  /user/register:
+    post:
+      tags:
+        - User
+      summary: User Registration
+      description: Register a new user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User registered successfully.
+        '400':
+          description: Invalid input.
+
+  /user/login:
+    post:
+      tags:
+        - User
+      summary: User Login
+      description: Authenticate user and return an access token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Login successful, access token returned.
+        '401':
+          description: Invalid credentials.
+        '404':
+          description: User is not found.
+
+  /todo:
+    get:
+      tags:
+        - Todo
+      summary: Get all todos
+      description: Retrieve all todos for the authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: true
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: true
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: List of todos.
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: '#/components/schemas/TodoListResponse'
+        '401':
+          description: Unauthorized.
+
+    post:
+      tags:
+        - Todo
+      summary: Create a new todo
+      description: Add a todo item for the authenticated user.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodo'
+      responses:
+        '201':
+          description: Todo created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          description: Invalid input.
+        '401':
+          description: Unauthorized.
+
+  /todo/{id}:
+    get:
+      tags:
+        - Todo
+      summary: Get a todo
+      description: Retrieve a single todo item by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Todo item retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          description: Todo not found.
+        '401':
+          description: Unauthorized.
+
+    put:
+      tags:
+        - Todo
+      summary: Update a todo
+      description: Update a todo item by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodo'
+      responses:
+        '200':
+          description: Todo updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          description: Todo not found.
+        '401':
+          description: Unauthorized.
+
+    delete:
+      tags:
+        - Todo
+      summary: Delete a todo
+      description: Remove a todo item by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Todo deleted successfully.
+        '404':
+          description: Todo not found.
+        '401':
+          description: Unauthorized.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 100
+        password:
+          type: string
+          minLength: 8
+          maxLength: 16
+      required:
+        - email
+        - password
+
+    Todo:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: The unique identifier of the todo item
+        title:
+          type: string
+          description: The title of the todo
+        description:
+          type: string
+          description: A description of the todo
+        dueDate:
+          type: integer
+          description: Epoch timestamp of the due date.
+        completed:
+          type: boolean
+          description: Indicates whether the todo is completed
+        creationDate:
+          type: integer
+          description: The creation date in epoch time (optional)
+    TodoListResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: The current page number
+        limit:
+          type: integer
+          description: The number of items per page
+        totalTodos:
+          type: integer
+          description: The total number of todos
+        totalPages:
+          type: integer
+          description: The total number of pages
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Todo'
+          description: A list of todo items
+
+    CreateTodo:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          maxLength: 250
+        dueDate:
+          type: integer
+          description: Epoch timestamp of the due date.
+        completed:
+          type: boolean
+          default: false
+      required:
+        - title
+        - description
+        - dueDate
+
+    UpdateTodo:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          maxLength: 250
+        dueDate:
+          type: integer
+          description: Epoch timestamp of the due date.
+        completed:
+          type: boolean
+
